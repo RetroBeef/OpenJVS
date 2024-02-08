@@ -232,6 +232,7 @@ int setSenseLine(int state)
   {
   /* Normal Float Style */
   case 1:
+  case 3:
   {
     if (!state)
     {
