@@ -19,7 +19,7 @@
 #define LOW 0
 #define HIGH 1
 
-int initDevice(char *devicePath, int senseLineType, int senseLinePin);
+int initDevice(char *devicePath, int senseLineType, int senseLinePin, int txEnablePin);
 int closeDevice();
 int readBytes(unsigned char *buffer, int amount);
 int writeBytes(unsigned char *buffer, int amount);

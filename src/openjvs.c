@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     }
 
     /* Init the connection to the Naomi */
-    if (!initDevice(config.devicePath, config.senseLineType, config.senseLinePin))
+    if (!initDevice(config.devicePath, config.senseLineType, config.senseLinePin, 24))//todo
     {
         debug(0, "Critical: Failed to init the RS485 device at %s, you must be root.\n", config.devicePath);
         return EXIT_FAILURE;

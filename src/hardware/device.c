@@ -5,6 +5,7 @@
 
 int serialIO = -1;
 int localSenseLinePin = 12;
+int localTxEnablePin = 24;
 int localSenseLineType = 0;
 
 int setSerialAttributes(int fd, int myBaud);
@@ -12,7 +13,7 @@ int setupGPIO(int pin);
 int setGPIODirection(int pin, int dir);
 int writeGPIO(int pin, int value);
 
-int initDevice(char *devicePath, int senseLineType, int senseLinePin)
+int initDevice(char *devicePath, int senseLineType, int senseLinePin, int txEnablePin)
 {
   if ((serialIO = open(devicePath, O_RDWR | O_NOCTTY | O_SYNC | O_NDELAY)) < 0)
     return 0;
@@ -23,10 +24,14 @@ int initDevice(char *devicePath, int senseLineType, int senseLinePin)
   /* Copy variables over from config */
   localSenseLineType = senseLineType;
   localSenseLinePin = senseLinePin;
+  localTxEnablePin = txEnablePin;
 
   /* Setup the GPIO pins */
   if (localSenseLineType && setupGPIO(localSenseLinePin) == -1)
     debug(0, "Sense line pin %d not available\n", senseLinePin);
+
+  if (localSenseLineType == 3 && setupGPIO(localTxEnablePin) == -1)
+    debug(0, "Tx enable pin %d not available\n", txEnablePin);
 
   /* Setup the GPIO pins initial state */
   switch (senseLineType)
@@ -41,6 +46,14 @@ int initDevice(char *devicePath, int senseLineType, int senseLinePin)
   case 2:
     debug(1, "Debug: Complex sense line set\n");
     setGPIODirection(senseLinePin, OUT);
+    break;
+  case 3:
+    debug(1, "Debug: Float/Sync sense line with TX enable set\n");
+    setGPIODirection(senseLinePin, IN);
+    setGPIODirection(txEnablePin, OUT);
+    if(!writeGPIO(txEnablePin, 0)){
+        debug(1, "Debug: Could not write to TX enable pin\n");
+    }
     break;
   default:
     debug(0, "Debug: Invalid sense line type set\n");
@@ -83,7 +96,14 @@ int readBytes(unsigned char *buffer, int amount)
 
 int writeBytes(unsigned char *buffer, int amount)
 {
-  return write(serialIO, buffer, amount);
+  if(!writeGPIO(localTxEnablePin, 1)){
+    debug(1, "Debug: Could not pull up TX enable pin\n");
+  }
+  int result = write(serialIO, buffer, amount);
+  if(!writeGPIO(localTxEnablePin, 0)){
+    debug(1, "Debug: Could not pull down TX enable pin\n");
+  }
+  return result;
 }
 
 /* Sets the configuration of the serial port */
